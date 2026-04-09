@@ -1,0 +1,16 @@
+[package]
+title = "NCUME Feedback Control"
+description = "Training material"
+version = "1.0.0"
+authors = ["Chin-Te LIN"]
+
+[[python.module]]
+name = "ncume.extensions.feedback_control"
+
+[[python.data]]
+path = "config"
+
+[dependencies]
+"omni.kit.uiapp" = {}
+"omni.ui" = {}
+"isaacsim.core.api" = {}
