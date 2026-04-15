@@ -45,16 +45,20 @@ class UIBuilder:
         if self._window is not None:
             self._window.visible = not self._window.visible
 
+    def show_window(self):
+        """Build and show the extension window."""
+        self.build_ui()
+        if self._window is not None:
+            self._window.visible = True
+
     def build_ui(self):
         """Build the Graphical User Interface (GUI) in the underlying windowing system"""
         if not self._window:
             self._window = ui.Window(title=self._window_title, visible=False, width=300, height=300)
             with self._window.frame:
-                # ---------------
-                # Build custom UI
-                # e.g.:
-                self._button = ui.Button("Click me", clicked_fn=lambda: print("Button clicked"))
-                # ---------------
+                with ui.VStack(spacing=8):
+                    ui.Button("Button 1", clicked_fn=lambda: print("Button 1 clicked"))
+                    ui.Button("Button 2", clicked_fn=lambda: print("Button 2 clicked"))
 
     def cleanup(self):
         """Clean up window and menu"""

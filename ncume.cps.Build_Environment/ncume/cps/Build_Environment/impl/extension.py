@@ -38,6 +38,7 @@ class Extension(omni.ext.IExt):
 
         # UI handler
         self.ui_builder = UIBuilder(window_title="Ncume Cps Build Environment", menu_path="Window/Ncume Cps Build Environment")
+        self.ui_builder.show_window()
 
     def on_shutdown(self):
         """Method called when the extension is disabled"""
