@@ -22,9 +22,12 @@
 # 
 
 import carb
+from isaacsim.storage.native import get_assets_root_path
 import omni.ext
 import omni.kit.app
+import omni.kit.undo
 import omni.usd
+from omni.isaac.core.utils.stage import add_reference_to_stage
 import random
 from pxr import Gf, PhysxSchema, Sdf, UsdGeom, UsdPhysics
 
@@ -46,6 +49,7 @@ class Extension(omni.ext.IExt):
             on_setup_scene=self.setup_scene,
             on_generate_objects=self.generate_objects,
             on_clear_objects=self.clear_objects,
+            on_spawn_jetbot=self.spawn_jetbot_with_realsense,
         )
         self.ui_builder.show_window()
 
@@ -193,17 +197,70 @@ class Extension(omni.ext.IExt):
 
         carb.log_info("No generated cubes found to remove.")
 
+    def spawn_jetbot_with_realsense(self):
+        """Spawn a Jetbot and attach a RealSense D455 under its chassis in one undo group."""
+        stage = omni.usd.get_context().get_stage()
+        if stage is None:
+            carb.log_error("No open USD stage to spawn Jetbot on.")
+            return
+
+        # ensure /world stage path existing
+        self._ensure_world_root(stage)
+
+        jetbot_path = Sdf.Path("/World/Jetbot")
+        if stage.GetPrimAtPath(jetbot_path):
+            carb.log_warn("Spawn skipped because /World/Jetbot already exists.")
+            return
+
+        assets_root = get_assets_root_path()
+        if assets_root is None:
+            carb.log_error("Could not find Isaac Sim assets root.")
+            return
+
+        jetbot_asset = assets_root + "/Isaac/Robots/NVIDIA/Jetbot/jetbot.usd"
+        realsense_asset = assets_root + "/Isaac/Sensors/Intel/RealSense/rsd455.usd"
+
+        sensor_path = Sdf.Path("/World/Jetbot/chassis/RealSense_D455")
+
+        # Reference both assets and apply the sensor offset inside a single undo group so
+        # the whole robot setup can be reverted in one step.
+        with omni.kit.undo.group():
+            add_reference_to_stage(usd_path=jetbot_asset, prim_path=str(jetbot_path))
+
+            if not stage.GetPrimAtPath(Sdf.Path("/World/Jetbot/chassis")):
+                carb.log_error("Jetbot was created, but /World/Jetbot/chassis was not found for sensor attachment.")
+                return
+
+            add_reference_to_stage(usd_path=realsense_asset, prim_path=str(sensor_path))
+
+            sensor_prim = stage.GetPrimAtPath(sensor_path)
+            if not sensor_prim:
+                carb.log_error("RealSense sensor reference was not created successfully.")
+                return
+
+            sensor_xform = UsdGeom.Xformable(sensor_prim)
+            sensor_xform.ClearXformOpOrder()
+            sensor_translate = sensor_xform.AddTranslateOp()
+            sensor_translate.Set(Gf.Vec3d(0.05, 0.0, 0.08))
+
+        carb.log_info(f"Spawned Jetbot at {jetbot_path} with RealSense D455 at {sensor_path}.")
+
     def _ensure_scene_root(self, stage):
         """Ensure the extension scene root exists and return its path."""
-        world_path = Sdf.Path("/World")
-        if not stage.GetPrimAtPath(world_path):
-            UsdGeom.Xform.Define(stage, world_path)
+        self._ensure_world_root(stage)
 
         scene_root = Sdf.Path("/World/BuildEnvironment")
         if not stage.GetPrimAtPath(scene_root):
             UsdGeom.Xform.Define(stage, scene_root)
 
         return scene_root
+
+    def _ensure_world_root(self, stage):
+        """Ensure the stage has a /World Xform root."""
+        world_path = Sdf.Path("/World")
+        if not stage.GetPrimAtPath(world_path):
+            UsdGeom.Xform.Define(stage, world_path)
+        return world_path
 
     def _ensure_physics_scene(self, stage):
         """Ensure there is a physics scene so dynamic objects respond to gravity."""
