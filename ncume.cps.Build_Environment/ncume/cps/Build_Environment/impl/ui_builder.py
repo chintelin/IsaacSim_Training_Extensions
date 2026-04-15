@@ -28,11 +28,19 @@ import omni.ui as ui
 class UIBuilder:
     """Manage extension UI"""
 
-    def __init__(self, window_title, menu_path=None, on_setup_scene=None, on_generate_objects=None):
+    def __init__(
+        self,
+        window_title,
+        menu_path=None,
+        on_setup_scene=None,
+        on_generate_objects=None,
+        on_clear_objects=None,
+    ):
         self._menu = None
         self._window = None
 
         self._menu_path = menu_path
+        self._on_clear_objects = on_clear_objects
         self._on_generate_objects = on_generate_objects
         self._on_setup_scene = on_setup_scene
         self._window_title = window_title
@@ -66,6 +74,10 @@ class UIBuilder:
                     ui.Button(
                         "Generate Objects",
                         clicked_fn=self._on_generate_objects or (lambda: None),
+                    )
+                    ui.Button(
+                        "Erase All Cubes",
+                        clicked_fn=self._on_clear_objects or (lambda: None),
                     )
 
     def cleanup(self):
