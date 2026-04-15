@@ -28,11 +28,13 @@ import omni.ui as ui
 class UIBuilder:
     """Manage extension UI"""
 
-    def __init__(self, window_title, menu_path=None):
+    def __init__(self, window_title, menu_path=None, on_setup_scene=None, on_generate_objects=None):
         self._menu = None
         self._window = None
 
         self._menu_path = menu_path
+        self._on_generate_objects = on_generate_objects
+        self._on_setup_scene = on_setup_scene
         self._window_title = window_title
         
         # create menu
@@ -56,9 +58,15 @@ class UIBuilder:
         if not self._window:
             self._window = ui.Window(title=self._window_title, visible=False, width=300, height=300)
             with self._window.frame:
-                with ui.VStack(spacing=8):
-                    ui.Button("Button 1", clicked_fn=lambda: print("Button 1 clicked"))
-                    ui.Button("Button 2", clicked_fn=lambda: print("Button 2 clicked"))
+                with ui.VStack(spacing=4):
+                    ui.Button(
+                        "Setup the testing Scene",
+                        clicked_fn=self._on_setup_scene or (lambda: None),
+                    )
+                    ui.Button(
+                        "Generate Objects",
+                        clicked_fn=self._on_generate_objects or (lambda: None),
+                    )
 
     def cleanup(self):
         """Clean up window and menu"""
