@@ -45,6 +45,9 @@ class Extension(omni.ext.IExt):
         """Method called when the extension is loaded/enabled"""
         carb.log_info(f"on_startup {ext_id}")
         ext_path = omni.kit.app.get_app().get_extension_manager().get_extension_path(ext_id)
+        self._ros2_context = None
+        self._ros2_node = None
+        self._start_ros2_node()
 
         # Build the extension window immediately and wire the setup button to scene creation.
         self.ui_builder = UIBuilder(
@@ -61,6 +64,7 @@ class Extension(omni.ext.IExt):
         """Method called when the extension is disabled"""
         carb.log_info(f"on_shutdown")
 
+        self._stop_ros2_node()
         # clean up UI
         self.ui_builder.cleanup()
 
@@ -352,6 +356,54 @@ class Extension(omni.ext.IExt):
             return None
 
         return og, rep
+
+    def _start_ros2_node(self):
+        """Create a lightweight ROS 2 node for this extension if rclpy is available."""
+        if self._ros2_node is not None:
+            return self._ros2_node
+
+        try:
+            import rclpy
+            from rclpy.context import Context
+        except Exception as exc:
+            carb.log_warn(f"ROS 2 node startup skipped because rclpy is unavailable: {exc}")
+            return None
+
+        try:
+            context = Context()
+            rclpy.init(args=None, context=context)
+            node = rclpy.create_node("ncume_cps_slam_extension", context=context)
+        except Exception as exc:
+            carb.log_error(f"Failed to start ROS 2 node for this extension: {exc}")
+            return None
+
+        self._ros2_context = context
+        self._ros2_node = node
+        carb.log_info("Started ROS 2 node 'ncume_cps_slam_extension'.")
+        return node
+
+    def _stop_ros2_node(self):
+        """Destroy the extension ROS 2 node and shut down its context."""
+        context = getattr(self, "_ros2_context", None)
+        node = getattr(self, "_ros2_node", None)
+
+        if node is not None:
+            try:
+                node.destroy_node()
+            except Exception as exc:
+                carb.log_warn(f"Failed to destroy ROS 2 node cleanly: {exc}")
+
+        if context is not None:
+            try:
+                import rclpy
+
+                if context.ok():
+                    rclpy.shutdown(context=context)
+            except Exception as exc:
+                carb.log_warn(f"Failed to shut down ROS 2 context cleanly: {exc}")
+
+        self._ros2_node = None
+        self._ros2_context = None
 
     def _find_realsense_camera_prims(self, stage, sensor_path):
         """Return every camera prim nested below the mounted RealSense asset."""
