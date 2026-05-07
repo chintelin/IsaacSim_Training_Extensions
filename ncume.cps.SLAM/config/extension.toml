@@ -20,10 +20,6 @@ icon = "data/icon.png"
 
 [dependencies]
 "omni.kit.uiapp" = {}
-"omni.graph.action" = {}
-"omni.isaac.core_nodes" = {}
-"isaacsim.ros2.bridge" = {}
-"omni.replicator.core" = {}
 
 # define the Python module that the extension provides
 [[python.module]]

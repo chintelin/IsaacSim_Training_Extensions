@@ -35,7 +35,6 @@ class UIBuilder:
         on_setup_scene=None,
         on_generate_objects=None,
         on_clear_objects=None,
-        on_spawn_jetbot=None,
     ):
         self._menu = None
         self._window = None
@@ -44,7 +43,6 @@ class UIBuilder:
         self._on_clear_objects = on_clear_objects
         self._on_generate_objects = on_generate_objects
         self._on_setup_scene = on_setup_scene
-        self._on_spawn_jetbot = on_spawn_jetbot
         self._window_title = window_title
         
         # create menu
@@ -80,10 +78,6 @@ class UIBuilder:
                     ui.Button(
                         "Erase All Cubes",
                         clicked_fn=self._on_clear_objects or (lambda: None),
-                    )
-                    ui.Button(
-                        "Spawn Jetbot with RealSense",
-                        clicked_fn=self._on_spawn_jetbot or (lambda: None),
                     )
 
     def cleanup(self):
